@@ -1,10 +1,9 @@
 flask
-flask-graphql
-flask-migrate
-flask-sqlalchemy
 graphene
-graphene-sqlalchemy
-requests
-pytest
-pytest-mock
-pytest-circleci-parallelized
+py2neo
+flask-graphql
+maya
+environs
+ipdb
+flake8
+autopep8
