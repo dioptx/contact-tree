@@ -38,6 +38,7 @@ class BaseModel(GraphObject):
         graph.push(self)
 
 class Contact(BaseModel):
+
     __primarykey__ = 'name'
     categories = RelatedTo('Category', 'BELONGS')
     communities = RelatedTo('Community', 'BELONGS')

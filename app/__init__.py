@@ -10,6 +10,7 @@ def create_app():
         'graphql', schema=schema, graphiql=True)
     )
 
+
     @app.errorhandler(404)
     def page_not_found(e):
         return jsonify({'message': 'The requested URL was not found on the server.'}), 404

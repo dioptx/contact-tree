@@ -108,9 +108,9 @@ class Query(graphene.ObjectType):
         return [CommunitySchema(**community.as_dict()) for community in Community().all]
 
 class Mutation(graphene.ObjectType):
-    create_customer = CreateContact.Field()
+    create_contact = CreateContact.Field()
     create_community = CreateCommunity.Field()
-    create_category = CreateCategroy.Field()
+    create_category = CreateCategory.Field()
 
 schema = graphene.Schema(query=Query, mutation=Mutation, auto_camelcase=False)
 
