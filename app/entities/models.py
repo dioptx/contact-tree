@@ -99,7 +99,6 @@ class Category(BaseModel):
             'description': self.description
         }
 
-
 # # SQL
 # class Contact(db.Model):
 #     __tablename__ = 'contacts'
