@@ -1,7 +1,7 @@
 from flask import Flask, jsonify
 from flask_graphql import GraphQLView
 
-from .entities.schemas import schema
+from .entities.new_schemas import schema
 
 
 def create_app():
