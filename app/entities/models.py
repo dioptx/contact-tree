@@ -1,12 +1,9 @@
-from builtins import property, hasattr, setattr
-
 import maya
 from graphql import GraphQLError
 from py2neo import Graph
 from py2neo.ogm import GraphObject, Property, RelatedTo
 import datetime
 from app import settings
-
 
 
 graph = Graph(
@@ -37,37 +34,160 @@ class BaseModel(GraphObject):
     def save(self):
         graph.push(self)
 
-class Contact(BaseModel):
 
+class Product(BaseModel):
     __primarykey__ = 'name'
-    categories = RelatedTo('Category', 'BELONGS')
-    communities = RelatedTo('Community', 'BELONGS')
+
     name = Property()
-    dateTimeAdded = Property(default= datetime.datetime.utcnow)
-
-    def fetch(self):
-        contact = self.match(graph, self.name).first()
-        if contact is None:
-            raise GraphQLError(F"{self.name} has not been found in our customers list.")
-
-        return contact
+    brand = Property()
+    category = Property()
 
     def as_dict(self):
         return {
             'name': self.name,
-            'timestamp': maya.parse(self.dateTimeAdded),
-            'categories': self.fetch_categories()
+            'brand': self.brand,
+            'category': self.category
         }
 
-    def fetch_categories(self):
-        """
-        Fetches the categories of a contact
-        :return:
-        """
+    def fetch(self):
+        return self.match(graph, self.name).first()
+
+
+class Store(BaseModel):
+    name = Property()
+    address = Property()
+
+    products = RelatedTo('Product', 'SELLS')
+    receipts = RelatedTo('Product', 'EMITTED')
+
+    def fetch(self, _id):
+        return Store.match(graph, _id).first()
+
+    def fetch_by_name_and_address(self):
+        return Store.match(graph).where(
+            f'_.name = "{self.name}" AND _.address = "{self.address}"'
+        ).first()
+
+    def fetch_products(self):
         return [{
-            **category[0].as_dict(),
-            **category[1]
-        } for category in self.categories._related_objects]
+            **product[0].as_dict(),
+            **product[1]
+        } for product in self.products._related_objects]
+
+    def as_dict(self):
+        return {
+            '_id': self.__primaryvalue__,
+            'name': self.name,
+            'address': self.address
+        }
+
+
+class Receipt(BaseModel):
+    total_amount = Property()
+    timestamp = Property()
+
+    products = RelatedTo('Product', 'HAS')
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        if kwargs.get('validate', False):
+            self.__validate_timestamp()
+
+    def as_dict(self):
+        return {
+            '_id': self.__primaryvalue__,
+            'total_amount': self.total_amount,
+            'timestamp': maya.parse(self.timestamp)
+        }
+
+    def fetch(self, _id):
+        return self.match(graph, _id).first()
+
+    def fetch_products(self):
+        return [{
+            **product[0].as_dict(),
+            **product[1]
+        } for product in self.products._related_objects]
+
+    def __validate_timestamp(self):
+        try:
+            maya.parse(self.timestamp, day_first=True, year_first=False)
+        except Exception:
+            raise GraphQLError(
+                'The timestamp you provided is not within the format: "dd/mm/yyyy hh:mm"'
+            )
+
+
+class Customer(BaseModel):
+    __primarykey__ = 'email'
+    name = Property()
+    email = Property()
+
+    receipts = RelatedTo('Receipt', 'HAS')
+    stores = RelatedTo('Store', 'GOES_TO')
+
+    def fetch(self):
+        customer = self.match(graph, self.email).first()
+        if customer is None:
+            raise GraphQLError(f'"{self.email}" has not been found in our customers list.')
+
+        return customer
+
+    def as_dict(self):
+        return {
+            'email': self.email,
+            'name': self.name
+        }
+
+    def __verify_products(self, products):
+        _total_amount = 0
+        for product in products:
+            _product = Product(name=product.get('name')).fetch()
+            if _product is None:
+                raise GraphQLError(f'"{product.name}" has not been found in our products list.')
+
+            _total_amount += product['price'] * product['amount']
+            product['product'] = _product
+        return products, _total_amount
+
+    def __verify_receipt(self, receipt):
+        customer_properties = f":Customer {{email: '{self.email}'}}"
+        receipt_properties = f":Receipt {{timestamp: '{receipt.timestamp}', total_amount:{receipt.total_amount}}}"
+        existing_receipts = graph.run(
+            f"MATCH ({customer_properties})-[relation:HAS]-({receipt_properties}) RETURN relation").data()
+
+        if existing_receipts:
+            raise GraphQLError("The receipt you're trying to submit already exists.")
+
+    def __link_products(self, products, total_amount, timestamp):
+        receipt = Receipt(total_amount=total_amount, timestamp=timestamp, validate=True)
+        self.__verify_receipt(receipt)
+
+        for item in products:
+            receipt.products.add(item.pop('product'), properties=item)
+
+        return receipt
+
+    def __verify_store(self, store):
+        _store = Store(**store).fetch_by_name_and_address()
+        if _store is None:
+            raise GraphQLError(f"The store \"{store['name']}\" does not exist in our stores list.")
+
+        return _store
+
+    def __add_links(self, store, receipt):
+        store.receipts.add(receipt)
+        self.stores.add(store)
+        self.receipts.add(receipt)
+
+    def submit_receipt(self, products, timestamp, store):
+        self.__add_links(
+            self.__verify_store(store),
+            self.__link_products(*self.__verify_products(products), timestamp)
+        )
+
+        self.save()
 
 class Community(BaseModel):
     __primarykey__ = 'name'
@@ -75,76 +195,58 @@ class Community(BaseModel):
     name = Property()
     description = Property()
 
-    def fetch(self, _id):
-        return Community.match(graph, _id).first()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-    def as_dict(self):
-        return {
-            '_id': self.__primaryvalue__,
-            'name': self.name,
-            'description': self.description
-        }
+    def fetch(self):
+        community = self.match(graph, self.name).first()
+        if community is None:
+            raise GraphQLError(F"{self.name} has not been found in our community list.")
 
-class Category(BaseModel):
+        return community
+
+class Agent(BaseModel):
+
+    __primarykey__ = 'name'
 
     name = Property()
-    description = Property()
+    dateTimeAdded = Property(default= datetime.datetime.utcnow())
 
-    def fetch(self, _id):
-        return Category.match(graph, _id).first()
+    knows = RelatedTo('Agent', 'KNOWS')
+
+    belongs = RelatedTo('Community', 'BELONGS')
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+    def link_connections(self, connections):
+        for name in connections:
+            agent = Agent(name= name).fetch()
+            agent.knows.add(self)
+            agent.save()
+        return
+
+    def link_communities(self, communities):
+        for name in communities:
+            community = Community(name= name).fetch()
+            agent = Agent(name=self.name).fetch()
+            agent.belongs.add(community)
+            agent.save()
+
+        return
+
+
+
+    def fetch(self):
+        agent = self.match(graph, self.name).first()
+        if agent is None:
+            raise GraphQLError(F"{self.name} has not been found in our agent list.")
+
+        return agent
 
     def as_dict(self):
         return {
-            '_id': self.__primaryvalue__,
             'name': self.name,
-            'description': self.description
+            'dateTimeAdded': maya.parse(self.dateTimeAdded),
         }
-
-# # SQL
-# class Contact(db.Model):
-#     __tablename__ = 'contacts'
-#     uuid = db.Column(db.Integer, primary_key=True)
-#     username = db.Column(db.String(256), index=True, unique=True)
-#     category = db.relationship('Category', backref='author')
-#     timestampAdded = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
-#     links =
-#     def __repr__(self):
-#         return '<User %r>' % self.username
-#
-# class Category(db.Model):
-#     __tablename__ = 'categories'
-#     uuid = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(256), index=True, unique=True)
-#     description = db.Column(db.String(512), index=True)
-#
-#
-#
-# # GraphQL
-# class ContactObject(SQLAlchemyObjectType):
-#    class Meta:
-#        model = Contact
-#        interfaces = (graphene.relay.Node,)
-#
-# class CategoryObject(SQLAlchemyObjectType):
-#     class Meta:
-#         model = Category
-#         interfaces = (graphene.relay.Node,)
-
-# class Post(db.Model):
-#     __tablename__ = 'posts'
-#     uuid = db.Column(db.Integer, primary_key=True)
-#     title = db.Column(db.String(256), index=True)
-#     body = db.Column(db.Text)
-#     author_id = db.Column(db.Integer, db.ForeignKey('users.uuid'))
-#
-#     def __repr__(self):
-#         return '<Post %r>' % self.title
-#
-#
-# class PostObject(SQLAlchemyObjectType):
-#     class Meta:
-#         model = Post
-#         interfaces = (graphene.relay.Node,)
-#
-
-

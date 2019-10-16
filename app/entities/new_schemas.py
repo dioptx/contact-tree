@@ -18,7 +18,7 @@ class AgentSchema(graphene.ObjectType):
 class CreateAgent(graphene.Mutation):
     class Arguments:
         name = graphene.String(required=True)
-        dateTimeAdded = graphene.String(datetime.datetime.utcnow())
+        dateTimeAdded = graphene.DateTime()
         knows = graphene.List(graphene.String)
         belongs = graphene.List(graphene.String)
     success = graphene.Boolean()
@@ -28,6 +28,7 @@ class CreateAgent(graphene.Mutation):
 
         agent = Agent(**kwargs)
         # contact.__verify_communities(communities= kwargs.pop('communities'))
+        agent.dateTimeAdded = datetime.datetime.utcnow()
         agent.save()
         if kwargs.get('knows') != None:
             agent.link_connections(connections=kwargs.get('knows'))
