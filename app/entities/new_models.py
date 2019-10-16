@@ -1,6 +1,6 @@
 import maya
 from graphql import GraphQLError
-from py2neo import Graph
+from py2neo import Graph, Node
 from py2neo.ogm import GraphObject, Property, RelatedTo
 import datetime
 from app import settings
@@ -33,6 +33,9 @@ class BaseModel(GraphObject):
     def save(self):
         graph.push(self)
 
+
+
+
 class Community(BaseModel):
     __primarykey__ = 'name'
 
@@ -57,9 +60,12 @@ class Agent(BaseModel):
     dateTimeAdded = Property(default= datetime.datetime.utcnow())
 
     knows = RelatedTo('Agent', 'KNOWS')
-
     belongs = RelatedTo('Community', 'BELONGS')
+    tags = Property()
 
+    email = Property()
+    loves = Property()
+    hates = Property()
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -81,7 +87,6 @@ class Agent(BaseModel):
         return
 
 
-
     def fetch(self):
         agent = self.match(graph, self.name).first()
         if agent is None:
@@ -89,8 +94,12 @@ class Agent(BaseModel):
 
         return agent
 
-    def as_dict(self):
+    def serialize(self):
         return {
             'name': self.name,
             'dateTimeAdded': maya.parse(self.dateTimeAdded),
+            'knows': [agent for agent in self.knows],
+            'belongs': [community for community in self.belongs],
+            'email': self.email
         }
+

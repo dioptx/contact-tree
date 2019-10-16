@@ -35,6 +35,9 @@ class BaseModel(GraphObject):
         graph.push(self)
 
 
+
+
+
 class Product(BaseModel):
     __primarykey__ = 'name'
 
