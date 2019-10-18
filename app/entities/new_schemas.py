@@ -4,8 +4,14 @@ from .new_models import Agent, Community
 
 
 class AgentSchema(graphene.ObjectType):
-    name = graphene.String()
-
+    name = graphene.String(required=True)
+    dateTimeAdded = graphene.DateTime()
+    knows = graphene.List(graphene.String)
+    belongs = graphene.List(graphene.String)
+    tags = graphene.List(graphene.String)
+    email = graphene.String(required=False)
+    loves = graphene.String(required=False)
+    hates = graphene.String(required=False)
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -47,7 +53,6 @@ class CreateAgent(graphene.Mutation):
 class CommunitySchema(graphene.ObjectType):
 
     name = graphene.String()
-
     description = graphene.String()
 
     def __init__(self, **kwargs):
@@ -76,6 +81,8 @@ class CreateCommunity(graphene.Mutation):
 
 class Query(graphene.ObjectType):
     agent = graphene.Field(lambda: AgentSchema, name=graphene.String())
+    community = graphene.Field(lambda: CommunitySchema, name= graphene.String())
+
 
 class Mutations(graphene.ObjectType):
     create_agent = CreateAgent.Field()
