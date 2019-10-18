@@ -4,6 +4,9 @@ from py2neo import Graph, Node
 from py2neo.ogm import GraphObject, Property, RelatedTo
 import datetime
 from app import settings
+import flask
+
+bp_assets = flask.Blueprint('assets', __name__)
 
 
 graph = Graph(
@@ -12,5 +15,11 @@ graph = Graph(
     user=settings.NEO4J_USER,
     password=settings.NEO4J_PASSWORD,
 )
+
+
+
+@bp_assets.route('/', methods=['GET'])
+def index():
+    return 'bp_asset index'
 
 
