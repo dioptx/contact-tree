@@ -21,9 +21,17 @@ class AgentSchema(graphene.ObjectType):
         self.agent = Agent(name= self.name)
 
     def resolve_knows(self, info):
+        _agent = Agent(name= self.name).fetch()
+
         # Todo: find out how to return who knows
-        print([a for a in self.agent.fetch_knows()])
-        return [AgentSchema(**a) for a in self.agent.fetch_knows()]
+
+        return _agent.knows
+
+    def resolve_belongs(self, info):
+        # Todo: build funcitonality
+        _agent = Agent(name=self.name).fetch()
+
+        return _agent.belongs
 
 
 class CreateAgent(graphene.Mutation):
@@ -45,11 +53,10 @@ class CreateAgent(graphene.Mutation):
         agent = Agent(**kwargs)
         agent.save()
         if kwargs.get('knows') != None:
-            agent.link_connections(connections=kwargs.get('knows'))
-
+            # agent.link_connections(connections=kwargs.get('knows'))
+            agent._link_connections(connections=kwargs.get('knows'))
         if kwargs.get('belongs') != None:
-            agent.link_communities(communities=kwargs.get('belongs'))
-
+            agent._link_communities(communities=kwargs.get('belongs'))
 
 
         return CreateAgent(agent=agent, success=True)
@@ -93,8 +100,9 @@ class Query(graphene.ObjectType):
     community = graphene.Field(lambda: CommunitySchema, name= graphene.String())
 
     def resolve_agent(self, info, name):
-        customer = Agent(name=name)
-        return AgentSchema(**customer.as_dict())
+        agent = Agent(name=name)
+
+        return AgentSchema(**agent.as_dict())
 
 
 class Mutations(graphene.ObjectType):

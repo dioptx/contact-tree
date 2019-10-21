@@ -73,27 +73,33 @@ class Agent(BaseModel):
     email = Property()
     loves = Property()
     hates = Property()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.dateTimeAdded = datetime.datetime.utcnow()
 
 
-    def link_connections(self, connections):
-        for name in connections:
-            agent = Agent(name= name).fetch()
-            agent.knows.add(self)
-            agent.save()
-        return
 
-    def link_communities(self, communities):
+
+    def _link_communities(self, communities):
+        agent = Agent(name=self.name).fetch()
+
         for name in communities:
             community = Community(name= name).fetch()
-            agent = Agent(name=self.name).fetch()
             agent.belongs.add(community)
             agent.save()
 
         return
 
+    def _link_connections(self, connections):
+        agent = Agent(name=self.name, validate=True).fetch()
+
+        for person in connections:
+            person = Agent(name= person).fetch()
+
+            agent.knows.add(person)
+            agent.save()
+        return agent
 
     def fetch(self):
         agent = self.match(graph, self.name).first()
