@@ -1,7 +1,10 @@
+from collections import namedtuple
+
 import graphene
 import datetime
-from .new_models import Agent, Community
 
+import json
+from .new_models import Agent, Community
 
 class AgentSchema(graphene.ObjectType):
     name = graphene.String(required=True)
@@ -14,9 +17,13 @@ class AgentSchema(graphene.ObjectType):
     hates = graphene.String(required=False)
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.name = kwargs.pop('name')
+        self.agent = Agent(name= self.name)
 
-        self.agent = Agent(name= self.name).fetch()
-
+    def resolve_knows(self, info):
+        # Todo: find out how to return who knows
+        print([a for a in self.agent.fetch_knows()])
+        return [AgentSchema(**a) for a in self.agent.fetch_knows()]
 
 
 class CreateAgent(graphene.Mutation):
@@ -36,8 +43,6 @@ class CreateAgent(graphene.Mutation):
     def mutate(self, info, **kwargs):
 
         agent = Agent(**kwargs)
-        # contact.__verify_communities(communities= kwargs.pop('communities'))
-        agent.dateTimeAdded = datetime.datetime.utcnow()
         agent.save()
         if kwargs.get('knows') != None:
             agent.link_connections(connections=kwargs.get('knows'))
@@ -76,12 +81,20 @@ class CreateCommunity(graphene.Mutation):
         return CreateCommunity(community=community, success=True)
 
 
+def _json_object_hook(d):
+    return namedtuple('X', d.keys())(*d.values())
 
+def json2obj(data):
+    return json.loads(data, object_hook=_json_object_hook)
 
 
 class Query(graphene.ObjectType):
-    agent = graphene.Field(lambda: AgentSchema, name=graphene.String())
+    agent = graphene.Field(lambda: AgentSchema, name=graphene.String(required=True))
     community = graphene.Field(lambda: CommunitySchema, name= graphene.String())
+
+    def resolve_agent(self, info, name):
+        customer = Agent(name=name)
+        return AgentSchema(**customer.as_dict())
 
 
 class Mutations(graphene.ObjectType):

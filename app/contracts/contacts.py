@@ -4,9 +4,14 @@ import json
 
 class ContactContract(object):
 
-    def __init__(self,cid: str, name:str, knows: List[str], belongs: List[str],
-                 tags: List[str], loves: str, hates: str, email:str ) -> None:
-        self.cid = cid
+    def __init__(self, name:str, email:str = '', knows=None, belongs=None,
+                 tags=None, loves: str = '', hates: str = '') -> None:
+        if tags is None:
+            tags = []
+        if belongs is None:
+            belongs = []
+        if knows is None:
+            knows = []
         self.name = name
         self.knows = knows
         self.belongs = belongs
@@ -19,6 +24,16 @@ class ContactContract(object):
     @classmethod
     def from_json(cls, data):
         return cls(**data)
+
+    def to_json(self):
+        return {
+            "name": self.name,
+            "email": self.email,
+            "belongs": self.belongs,
+            "knows": self.knows,
+            "loves": self.loves,
+            "hates": self.hates
+        }
 
 class CommunityContract(object):
 

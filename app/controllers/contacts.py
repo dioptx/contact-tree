@@ -9,6 +9,7 @@ import json
 from app.contracts.contacts import *
 from app.entities.new_models import *
 from .common import ok, error, not_found
+from app.entities.new_schemas import *
 
 bp_contacts = flask.Blueprint('contacts', __name__)
 
@@ -20,20 +21,45 @@ graph = Graph(
 )
 
 
-
 @bp_contacts.route('/', methods=['GET'])
 def index():
     return 'bp_contacts index'
 
+
 @bp_contacts.route('/insert', methods=['POST'])
 def create_contact():
-    req = ContactContract.from_json(json.loads(flask.request.data))
+    if flask.request.data == '':
+        return error('No json data sent.')
 
-    #validate
-    pass
+    try:
+        req = json.loads(flask.request.data)
+    except json.decoder.JSONDecodeError as er:
+        return error(er.with_traceback())
 
-    # new_contact = Agent()
-    # new_contact.save
+    try:
+        result = ContactContract.from_json(req)
+    except TypeError as er:
+        return error(er.with_traceback())
 
-    print(req)
+    agent = Agent(**result.to_json())
+    agent.save()
+
     return ok()
+
+@bp_contacts.route('/getbyname', methods=['GET'])
+def get_contact():
+    if flask.request.data == '':
+        return error('No json data sent.')
+    try:
+        req = json.loads(flask.request.data)
+    except json.decoder.JSONDecodeError as er:
+        return error(er.with_traceback())
+    print(req)
+
+    # Todo: Build Query
+
+    return ok()
+
+
+
+

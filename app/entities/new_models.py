@@ -52,6 +52,13 @@ class Community(BaseModel):
 
         return community
 
+    def as_dict(self):
+        return {
+            '_id': self.__primaryvalue__,
+            'name': self.name,
+            'description': self.description
+        }
+
 class Agent(BaseModel):
 
     __primarykey__ = 'name'
@@ -68,6 +75,7 @@ class Agent(BaseModel):
     hates = Property()
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.dateTimeAdded = datetime.datetime.utcnow()
 
 
     def link_connections(self, connections):
@@ -94,10 +102,22 @@ class Agent(BaseModel):
 
         return agent
 
-    def serialize(self):
+    def fetch_knows(self):
+
+        return [{
+            **agent[0].as_dict(),
+            **agent[1]
+        } for agent in self.knows._related_objects]
+
+    def fetch_belongs(self):
+        return [{
+            **com[0].as_dict(),
+            **com[1]
+        } for com in self.belongs._related_objects]
+
+    def as_dict(self):
         return {
             'name': self.name,
-            'dateTimeAdded': maya.parse(self.dateTimeAdded),
             'knows': [agent for agent in self.knows],
             'belongs': [community for community in self.belongs],
             'email': self.email
