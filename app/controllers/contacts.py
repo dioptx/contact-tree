@@ -34,16 +34,19 @@ def create_contact():
     try:
         req = json.loads(flask.request.data)
     except json.decoder.JSONDecodeError as er:
-        return error(er)
+        return error("Could not decode JSON. "
+                     "Error: " + str(er))
 
     try:
         result = ContactContract.from_json(req)
     except TypeError as er:
-        return error(er)
+        return error("Json request not compatible with the Contract. "
+                     "Error: " + str(er))
 
     agent = Agent(**result.to_json())
-    agent._link_communities()
     agent.save()
+    agent._link_communities()
+    agent._link_connections()
 
     return ok()
 
@@ -58,8 +61,11 @@ def get_contact():
     print(req)
 
     # Todo: Build Query
+    print(req['name'])
 
-    return ok()
+    agent = Agent(name= req['name']).fetch()
+    print(agent.as_dict())
+    return ok(agent.as_dict())
 
 
 

@@ -77,8 +77,6 @@ class Agent(BaseModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-
-
     def _link_communities(self):
 
         agent = Agent(name=self.name).fetch()
@@ -120,8 +118,8 @@ class Agent(BaseModel):
     def as_dict(self):
         return {
             'name': self.name,
-            'knows': [agent for agent in self.knows],
-            'belongs': [community for community in self.belongs],
+            'knows': self.fetch_knows(),
+            'belongs': self.fetch_belongs(),
             'email': self.email
         }
 
