@@ -6,12 +6,12 @@ import datetime
 from app import settings
 import flask
 import json
-from app.contracts.contacts_contract import *
+from app.contracts.agents_contract import *
 from app.entities.new_models import *
 from .common import ok, error, not_found, req_to_json
 from app.entities.new_schemas import *
 
-bp_contacts = flask.Blueprint('contacts', __name__)
+bp_agents = flask.Blueprint('agents', __name__)
 
 graph = Graph(
     host=settings.NEO4J_HOST,
@@ -21,12 +21,12 @@ graph = Graph(
 )
 
 
-@bp_contacts.route('/', methods=['GET'])
+@bp_agents.route('/', methods=['GET'])
 def index():
-    return 'bp_contacts index'
+    return 'bp_agents index'
 
 
-@bp_contacts.route('/insert', methods=['POST'])
+@bp_agents.route('/insert', methods=['POST'])
 def create_contact():
     json_req = req_to_json(flask.request.data)
 
@@ -43,7 +43,7 @@ def create_contact():
 
     return ok(agent.as_dict())
 
-@bp_contacts.route('/getbyname', methods=['GET'])
+@bp_agents.route('/getbyname', methods=['GET'])
 def get_contact():
     json_req = req_to_json(flask.request.data)
 
