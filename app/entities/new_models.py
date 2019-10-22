@@ -76,6 +76,7 @@ class Agent(BaseModel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        print(self.id)
 
     def _link_communities(self):
 
@@ -123,3 +124,46 @@ class Agent(BaseModel):
             'email': self.email
         }
 
+class Collection(BaseModel):
+
+    __primarykey__ = 'name'
+
+    name = Property()
+    dateTimeAdded = Property(default= datetime.datetime.utcnow())
+    owner = RelatedTo('Agent', "OWNER")
+    type = Property()
+    tags = Property()
+
+    payload = Property()
+
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+    def _link_owner(self):
+        collection = Collection(name = self.name).fetch()
+        for owner_name in self.belongs:
+            owner = Agent(name= owner_name).fetch()
+            collection.owner.add(owner)
+
+    def fetch(self):
+        collection = self.match(graph, self.name).first()
+        if collection is None:
+            raise GraphQLError(F"{self.name} has not been found in our collection list.")
+
+        return collection
+
+    def fetch_owner(self):
+        return [{
+            **owner[0].as_dict(),
+            **owner[1]
+        } for owner in self.owner._related_objects]
+
+    def as_dict(self):
+        return {
+            'name': self.name,
+            'owner': self.fetch_owner(),
+            'type': self.type,
+            'tags': self.tags
+        }
