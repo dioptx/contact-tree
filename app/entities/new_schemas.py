@@ -52,12 +52,8 @@ class CreateAgent(graphene.Mutation):
 
         agent = Agent(**kwargs)
         agent.save()
-        if kwargs.get('knows') != None:
-            # agent.link_connections(connections=kwargs.get('knows'))
-            agent._link_connections(connections=kwargs.get('knows'))
-        if kwargs.get('belongs') != None:
-            agent._link_communities(communities=kwargs.get('belongs'))
-
+        agent._link_connections()
+        agent._link_communities()
 
         return CreateAgent(agent=agent, success=True)
 

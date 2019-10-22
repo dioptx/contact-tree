@@ -6,7 +6,7 @@ import datetime
 from app import settings
 import flask
 import json
-from app.contracts.contacts import *
+from app.contracts.contacts_contract import *
 from app.entities.new_models import *
 from .common import ok, error, not_found
 from app.entities.new_schemas import *
@@ -34,14 +34,15 @@ def create_contact():
     try:
         req = json.loads(flask.request.data)
     except json.decoder.JSONDecodeError as er:
-        return error(er.with_traceback())
+        return error(er)
 
     try:
         result = ContactContract.from_json(req)
     except TypeError as er:
-        return error(er.with_traceback())
+        return error(er)
 
     agent = Agent(**result.to_json())
+    agent._link_communities()
     agent.save()
 
     return ok()

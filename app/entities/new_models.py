@@ -41,6 +41,7 @@ class Community(BaseModel):
 
     name = Property()
     description = Property()
+    dateTimeAdded = Property(default= datetime.datetime.utcnow())
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -54,7 +55,6 @@ class Community(BaseModel):
 
     def as_dict(self):
         return {
-            '_id': self.__primaryvalue__,
             'name': self.name,
             'description': self.description
         }
@@ -76,25 +76,21 @@ class Agent(BaseModel):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.dateTimeAdded = datetime.datetime.utcnow()
 
 
 
+    def _link_communities(self):
 
-    def _link_communities(self, communities):
         agent = Agent(name=self.name).fetch()
-
-        for name in communities:
+        for name in self.belongs:
             community = Community(name= name).fetch()
             agent.belongs.add(community)
             agent.save()
-
         return
 
-    def _link_connections(self, connections):
+    def _link_connections(self):
         agent = Agent(name=self.name, validate=True).fetch()
-
-        for person in connections:
+        for person in self.knows:
             person = Agent(name= person).fetch()
 
             agent.knows.add(person)
