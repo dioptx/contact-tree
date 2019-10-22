@@ -37,9 +37,39 @@ class ContactContract(object):
 
 class CommunityContract(object):
 
-    def __init__(self, cid: str) -> None:
-        pass
+    def __init__(self, name: str, description: str, owners = None) -> None:
+        self.name =  name
+        self.description = description
+        self.owners = owners
 
     @classmethod
     def from_json(cls, data):
         return cls(**data)
+
+    def to_json(self):
+        return {
+            "name": self.name,
+            "description": self.description,
+            "owners": self.owners,
+        }
+
+
+class CollectionContract(object):
+
+    def __init__(self, name: str, description: str, owners = None) -> None:
+        self.name =  name
+        self.description = description
+        self.owners = owners
+
+    @classmethod
+    def from_json(cls, data):
+        return cls(**data)
+
+    def to_json(self):
+        return {
+            "name": self.name,
+            "description": self.description,
+            "owners": self.owners,
+        }
+
+
