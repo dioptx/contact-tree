@@ -4,7 +4,7 @@ import datetime
 from app import settings
 import flask
 import json
-from app.contracts.agents_contract import *
+from app.contracts.contracts import *
 from app.entities.new_models import *
 from .common import ok, error, not_found, req_to_json
 from app.entities.new_schemas import *
