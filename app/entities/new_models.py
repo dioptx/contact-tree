@@ -34,8 +34,6 @@ class BaseModel(GraphObject):
         graph.push(self)
 
 
-
-
 class Community(BaseModel):
     __primarykey__ = 'name'
 

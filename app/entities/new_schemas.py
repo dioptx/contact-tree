@@ -32,15 +32,10 @@ class AgentSchema(graphene.ObjectType):
 
     def resolve_knows(self, info):
         _agent = Agent(name=self.name).fetch()
-
-        # Todo: find out how to return who knows
-
         return _agent.knows
 
     def resolve_belongs(self, info):
-        # Todo: build funcitonality
         _agent = Agent(name=self.name).fetch()
-
         return _agent.belongs
 
 
